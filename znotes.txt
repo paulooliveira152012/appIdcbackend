@@ -1,0 +1,20 @@
+1 - criação do template:
+dotnet new webapi -n BibliaStudy.Api
+
+2 - criar uma pasta para os metodos chamada "controlers"
+
+3 - Limpar o Program.cs minimamente para iniciar o app e linkar os controllers
+
+4 - implementar banco de dados relacional (neon)
+    criar banco e pegar link de conexão --> 
+        postgresql://neondb_owner:npg_MjG1qZ0dnYBA@ep-orange-sky-a43tbtp8-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    instalar pacotes -->
+        dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
+        dotnet add package Microsoft.EntityFrameworkCore.Design
+    criar Data/AppDbContext.cs para...
+    criar primeira migration --> o que e isso? -->
+        dotnet tool install --global dotnet-ef
+    ddepois isso --> que e isso?
+        dotnet ef migrations add InitialCreate
+    depois isoo -->. o que e?
+        dotnet ef database update
