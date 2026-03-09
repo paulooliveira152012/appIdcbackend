@@ -16,22 +16,31 @@ namespace BibliaStudy.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly IConfiguration _configuration;
+
+    public UsersController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     private string GenerateJwtToken(User user)
     {
-        var key = _configuration["Jwt:Key"];
-        var issuer = _configuration["Jwt:Issuer"];
-        var audience = _configuration["Jwt:Audience"];
+        var key = Environment.GetEnvironmentVariable("JWT_KEY");
+        var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+        var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new Exception("JWT_KEY não foi encontrada.");
+        }
 
         var claims = new[]
         {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Name, user.Username),
-        new Claim(ClaimTypes.Email, user.Email)
-    };
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
 
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -43,12 +52,6 @@ public class UsersController : ControllerBase
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public UsersController(AppDbContext context, IConfiguration configuration)
-    {
-        _context = context;
-        _configuration = configuration;
     }
 
     [HttpPost("signup")]
@@ -103,7 +106,7 @@ public class UsersController : ControllerBase
         return Ok(new
         {
             message = "Login realizado com sucesso",
-            token = token,
+            token,
             user = new
             {
                 userId = user.Id,
