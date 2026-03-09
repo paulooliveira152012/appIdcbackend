@@ -1,6 +1,5 @@
 @BibliaStudy.Api_HostAddress = http://localhost:5086
 
-GET {{BibliaStudy.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+
 
 ###
