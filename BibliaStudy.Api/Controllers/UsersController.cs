@@ -55,8 +55,28 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("signup")]
-    public IActionResult Signup([FromBody] RegisterUserDto dto)
+public IActionResult Signup([FromBody] RegisterUserDto dto)
+{
+    try
     {
+        if (dto == null)
+            return BadRequest(new { message = "Dados inválidos." });
+
+        if (string.IsNullOrWhiteSpace(dto.Email) ||
+            string.IsNullOrWhiteSpace(dto.Password) ||
+            string.IsNullOrWhiteSpace(dto.Username))
+        {
+            return BadRequest(new { message = "Email, senha e username são obrigatórios." });
+        }
+
+        // verificar se email já existe
+        var emailExists = _context.Users.Any(u => u.Email == dto.Email);
+
+        if (emailExists)
+        {
+            return Conflict(new { message = "Este email já está registrado." });
+        }
+
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -75,6 +95,23 @@ public class UsersController : ControllerBase
             userId = user.Id
         });
     }
+    catch (DbUpdateException dbEx)
+    {
+        return StatusCode(500, new
+        {
+            message = "Erro ao salvar usuário no banco.",
+            error = dbEx.Message
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new
+        {
+            message = "Erro interno do servidor.",
+            error = ex.Message
+        });
+    }
+}
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)

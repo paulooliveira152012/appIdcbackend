@@ -18,3 +18,10 @@ dotnet new webapi -n BibliaStudy.Api
         dotnet ef migrations add InitialCreate
     depois isoo -->. o que e?
         dotnet ef database update
+
+
+AO CRIAR NOVOS CAMPOS EM MODELOS:
+1 - Criar um novo arquivo de migração para atualiza o banco
+    dotnet ef migrations add AddCheckInFields
+2 - aplicar essas mudanças ao banco
+    dotnet ef database update
