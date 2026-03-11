@@ -167,6 +167,67 @@ public class UsersController : ControllerBase
         });
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUserById(string id)
+    {
+        if (!Guid.TryParse(id, out var userId))
+            return BadRequest(new { message = "Id inválido." });
+
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new
+            {
+                userId = u.Id,
+                username = u.Username,
+                email = u.Email,
+                profileImage = u.ProfileImage,
+                level = u.Level,
+                points = u.Points
+            })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+            return NotFound(new { message = "Usuário não encontrado." });
+
+        return Ok(new { user });
+    }
+
+
+    [HttpPut("update-profile")]
+    public async Task<IActionResult> ProfileUpdate([FromBody] UpdateProfileDto dto)
+    {
+        Console.WriteLine("update-profile");
+        if (dto == null)
+            return BadRequest("Dados inválidos.");
+
+        if (string.IsNullOrWhiteSpace(dto.UserId))
+            return BadRequest("UserId é obrigatório.");
+
+        if (string.IsNullOrWhiteSpace(dto.Username))
+            return BadRequest("Username é obrigatório.");
+
+        if (!Guid.TryParse(dto.UserId, out var userId))
+            return BadRequest("UserId inválido.");
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+            return NotFound("Usuário não encontrado.");
+
+        user.Username = dto.Username.Trim();
+        user.ProfileImage = string.IsNullOrWhiteSpace(dto.ProfileImage)
+            ? user.ProfileImage
+            : dto.ProfileImage.Trim();
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Perfil atualizado com sucesso",
+            user
+        });
+    }
+
 
     [HttpGet("users")]
     public async Task<IActionResult> Users()

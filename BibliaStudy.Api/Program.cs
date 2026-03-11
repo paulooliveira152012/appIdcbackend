@@ -36,7 +36,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3001", "https://app-idc.vercel.app")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://app-idc.vercel.app")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
