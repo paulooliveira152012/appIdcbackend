@@ -105,7 +105,7 @@ public class UsersController : ControllerBase
                     email = user.Email,
                     profileImage = user.ProfileImage,
                 },
-                
+
             });
         }
         catch (DbUpdateException dbEx)
@@ -166,6 +166,30 @@ public class UsersController : ControllerBase
             }
         });
     }
+
+
+    [HttpGet("users")]
+    public async Task<IActionResult> Users()
+    {
+        var users = await _context.Users
+            .Select(u => new
+            {
+                userId = u.Id,
+                username = u.Username,
+                profileImage = u.ProfileImage,
+                role = u.Role,
+                points = u.Points,
+                level = u.Level,
+                checkInStreak = u.CheckInStreak,
+                lastCheckInAt = u.LastCheckInAt,
+                createdAt = u.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
+
 
     [HttpGet("ping")]
     public IActionResult Ping()
