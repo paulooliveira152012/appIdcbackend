@@ -10,6 +10,8 @@ public class User
 
     public string PasswordHash { get; set; } = string.Empty;
 
+    public string ProfileImage { get; set; } = string.Empty;
+
     public string Role { get; set; } = "user";
 
     // pontos acumulados no app

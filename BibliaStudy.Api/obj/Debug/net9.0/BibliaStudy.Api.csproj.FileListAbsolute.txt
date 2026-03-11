@@ -139,3 +139,5 @@
 /Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/bin/Debug/net9.0/DotNetEnv.dll
 /Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/bin/Debug/net9.0/Sprache.dll
+/Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/bin/Debug/net9.0/AWSSDK.Core.dll
+/Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/bin/Debug/net9.0/AWSSDK.S3.dll

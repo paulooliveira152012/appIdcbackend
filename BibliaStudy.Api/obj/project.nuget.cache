@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "kwt6D8euWPQ=",
+  "dgSpecHash": "QC8nnSt35w4=",
   "success": true,
   "projectFilePath": "/Users/paulooliveira/Desktop/biblia-map/backend/BibliaStudy.Api/BibliaStudy.Api.csproj",
   "expectedPackageFiles": [
+    "/Users/paulooliveira/.nuget/packages/awssdk.core/4.0.3.16/awssdk.core.4.0.3.16.nupkg.sha512",
+    "/Users/paulooliveira/.nuget/packages/awssdk.s3/4.0.18.8/awssdk.s3.4.0.18.8.nupkg.sha512",
     "/Users/paulooliveira/.nuget/packages/bcrypt.net-next/4.1.0/bcrypt.net-next.4.1.0.nupkg.sha512",
     "/Users/paulooliveira/.nuget/packages/dotnetenv/3.1.1/dotnetenv.3.1.1.nupkg.sha512",
     "/Users/paulooliveira/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",

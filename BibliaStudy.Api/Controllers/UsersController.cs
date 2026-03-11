@@ -55,63 +55,76 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("signup")]
-public IActionResult Signup([FromBody] RegisterUserDto dto)
-{
-    try
+    public IActionResult Signup([FromBody] RegisterUserDto dto)
     {
-        if (dto == null)
-            return BadRequest(new { message = "Dados inválidos." });
-
-        if (string.IsNullOrWhiteSpace(dto.Email) ||
-            string.IsNullOrWhiteSpace(dto.Password) ||
-            string.IsNullOrWhiteSpace(dto.Username))
+        Console.WriteLine("signup...");
+        try
         {
-            return BadRequest(new { message = "Email, senha e username são obrigatórios." });
+            if (dto == null)
+                return BadRequest(new { message = "Dados inválidos." });
+
+            if (string.IsNullOrWhiteSpace(dto.Email) ||
+                string.IsNullOrWhiteSpace(dto.Password) ||
+                string.IsNullOrWhiteSpace(dto.Username))
+            {
+                return BadRequest(new { message = "Email, senha e username são obrigatórios." });
+            }
+
+            // verificar se email já existe
+            var emailExists = _context.Users.Any(u => u.Email == dto.Email);
+
+            if (emailExists)
+            {
+                return Conflict(new { message = "Este email já está registrado." });
+            }
+
+            // receber o profileImage e salvar no banco (garantir que tenha no modelo)
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = dto.Username,
+                Email = dto.Email,
+                ProfileImage = dto.ProfileImage,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            _context.SaveChanges();
+
+            var token = GenerateJwtToken(user);
+
+            return Ok(new
+            {
+                message = "Conta criada com sucesso",
+                token,
+                user = new
+                {
+                    userId = user.Id,
+                    username = user.Username,
+                    email = user.Email,
+                    profileImage = user.ProfileImage,
+                },
+                
+            });
         }
-
-        // verificar se email já existe
-        var emailExists = _context.Users.Any(u => u.Email == dto.Email);
-
-        if (emailExists)
+        catch (DbUpdateException dbEx)
         {
-            return Conflict(new { message = "Este email já está registrado." });
+            return StatusCode(500, new
+            {
+                message = "Erro ao salvar usuário no banco.",
+                error = dbEx.Message
+            });
         }
-
-        var user = new User
+        catch (Exception ex)
         {
-            Id = Guid.NewGuid(),
-            Username = dto.Username,
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Users.Add(user);
-        _context.SaveChanges();
-
-        return Ok(new
-        {
-            message = "Conta criada com sucesso",
-            userId = user.Id
-        });
+            return StatusCode(500, new
+            {
+                message = "Erro interno do servidor.",
+                error = ex.Message
+            });
+        }
     }
-    catch (DbUpdateException dbEx)
-    {
-        return StatusCode(500, new
-        {
-            message = "Erro ao salvar usuário no banco.",
-            error = dbEx.Message
-        });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new
-        {
-            message = "Erro interno do servidor.",
-            error = ex.Message
-        });
-    }
-}
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
@@ -148,7 +161,8 @@ public IActionResult Signup([FromBody] RegisterUserDto dto)
             {
                 userId = user.Id,
                 username = user.Username,
-                email = user.Email
+                email = user.Email,
+                profileImage = user.ProfileImage
             }
         });
     }
