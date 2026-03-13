@@ -104,6 +104,10 @@ public class UsersController : ControllerBase
                     username = user.Username,
                     email = user.Email,
                     profileImage = user.ProfileImage,
+                    role = user.Role,
+                    points = user.Points,
+                    level = user.Level,
+                    checkinStreak = user.CheckInStreak,
                 },
 
             });
