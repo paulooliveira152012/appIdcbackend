@@ -186,7 +186,8 @@ public class UsersController : ControllerBase
                 email = u.Email,
                 profileImage = u.ProfileImage,
                 level = u.Level,
-                points = u.Points
+                points = u.Points,
+                lastCheckInAt = u.LastCheckInAt
             })
             .FirstOrDefaultAsync();
 
