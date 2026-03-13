@@ -36,17 +36,43 @@ public class InteractionController : ControllerBase
         if (user == null)
             return NotFound(new { message = "Usuário não encontrado." });
 
-        var now = DateTime.UtcNow;
-        var today = now.Date;
-        var lastCheckInDate = user.LastCheckInAt?.Date;
+        var timeZoneId = string.IsNullOrWhiteSpace(user.TimeZone)
+            ? "UTC"
+            : user.TimeZone;
 
-        if (lastCheckInDate == today)
+        TimeZoneInfo userTimeZone;
+
+        try
+        {
+            userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        }
+        catch
+        {
+            userTimeZone = TimeZoneInfo.Utc;
+            timeZoneId = "UTC";
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, userTimeZone);
+        var todayLocal = nowLocal.Date;
+
+        DateTime? lastCheckInLocalDate = null;
+
+        if (user.LastCheckInAt.HasValue)
+        {
+            var lastCheckInUtc = DateTime.SpecifyKind(user.LastCheckInAt.Value, DateTimeKind.Utc);
+            var lastCheckInLocal = TimeZoneInfo.ConvertTimeFromUtc(lastCheckInUtc, userTimeZone);
+            lastCheckInLocalDate = lastCheckInLocal.Date;
+        }
+
+        if (lastCheckInLocalDate == todayLocal)
         {
             return BadRequest(new
             {
                 message = "Check-in já realizado hoje.",
                 streak = user.CheckInStreak ?? 0,
                 points = user.Points,
+                timeZone = timeZoneId,
                 user = new
                 {
                     userId = user.Id,
@@ -58,14 +84,15 @@ public class InteractionController : ControllerBase
                     level = user.Level,
                     checkInStreak = user.CheckInStreak,
                     lastCheckInAt = user.LastCheckInAt,
-                    createdAt = user.CreatedAt
+                    createdAt = user.CreatedAt,
+                    timeZone = user.TimeZone
                 }
             });
         }
 
-        var yesterday = today.AddDays(-1);
+        var yesterdayLocal = todayLocal.AddDays(-1);
 
-        if (lastCheckInDate == yesterday)
+        if (lastCheckInLocalDate == yesterdayLocal)
         {
             user.CheckInStreak = (user.CheckInStreak ?? 0) + 1;
         }
@@ -89,7 +116,10 @@ public class InteractionController : ControllerBase
         var totalPointsEarned = basePoints + bonusPoints;
 
         user.Points += totalPointsEarned;
-        user.LastCheckInAt = now;
+        user.LastCheckInAt = nowUtc;
+
+        // opcional: recalcular nível automaticamente
+        user.Level = (user.Points / 100) + 1;
 
         await _context.SaveChangesAsync();
 
@@ -101,6 +131,7 @@ public class InteractionController : ControllerBase
             bonusPoints,
             streak = user.CheckInStreak,
             points = user.Points,
+            timeZone = timeZoneId,
             user = new
             {
                 userId = user.Id,
@@ -112,79 +143,80 @@ public class InteractionController : ControllerBase
                 level = user.Level,
                 checkInStreak = user.CheckInStreak,
                 lastCheckInAt = user.LastCheckInAt,
-                createdAt = user.CreatedAt
+                createdAt = user.CreatedAt,
+                timeZone = user.TimeZone
             }
         });
     }
 
 
     [HttpPost("award-points")]
-public async Task<IActionResult> AwardPoints([FromBody] AwardPointsDto dto)
-{
-    if (dto == null)
-        return BadRequest(new { message = "Dados inválidos." });
-
-    if (!Guid.TryParse(dto.LeaderUserId, out var leaderUserId))
-        return BadRequest(new { message = "LeaderUserId inválido." });
-
-    if (!Guid.TryParse(dto.TargetUserId, out var targetUserId))
-        return BadRequest(new { message = "TargetUserId inválido." });
-
-    if (dto.Points <= 0)
-        return BadRequest(new { message = "A pontuação deve ser maior que zero." });
-
-    if (dto.Points > 1000)
-        return BadRequest(new { message = "Pontuação muito alta." });
-
-    var leader = await _context.Users.FirstOrDefaultAsync(u => u.Id == leaderUserId);
-    if (leader == null)
-        return NotFound(new { message = "Leader não encontrado." });
-
-    if (leader.Role?.ToLower() != "leader")
-        return StatusCode(403, new { message = "Apenas leaders podem atribuir pontos." });
-
-    var targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == targetUserId);
-    if (targetUser == null)
-        return NotFound(new { message = "Usuário de destino não encontrado." });
-
-    var award = new PointAward
+    public async Task<IActionResult> AwardPoints([FromBody] AwardPointsDto dto)
     {
-        TargetUserId = targetUser.Id,
-        GivenByUserId = leader.Id,
-        Points = dto.Points,
-        Reason = dto.Reason?.Trim() ?? string.Empty,
-        CreatedAt = DateTime.UtcNow
-    };
+        if (dto == null)
+            return BadRequest(new { message = "Dados inválidos." });
 
-    targetUser.Points += dto.Points;
+        if (!Guid.TryParse(dto.LeaderUserId, out var leaderUserId))
+            return BadRequest(new { message = "LeaderUserId inválido." });
 
-    // opcional: recalcular nível automaticamente
-    targetUser.Level = (targetUser.Points / 100) + 1;
+        if (!Guid.TryParse(dto.TargetUserId, out var targetUserId))
+            return BadRequest(new { message = "TargetUserId inválido." });
 
-    _context.PointAwards.Add(award);
-    await _context.SaveChangesAsync();
+        if (dto.Points <= 0)
+            return BadRequest(new { message = "A pontuação deve ser maior que zero." });
 
-    return Ok(new
-    {
-        message = "Pontos atribuídos com sucesso.",
-        pointsAdded = dto.Points,
-        reason = award.Reason,
-        awardedAt = award.CreatedAt,
-        targetUser = new
+        if (dto.Points > 1000)
+            return BadRequest(new { message = "Pontuação muito alta." });
+
+        var leader = await _context.Users.FirstOrDefaultAsync(u => u.Id == leaderUserId);
+        if (leader == null)
+            return NotFound(new { message = "Leader não encontrado." });
+
+        if (leader.Role?.ToLower() != "leader")
+            return StatusCode(403, new { message = "Apenas leaders podem atribuir pontos." });
+
+        var targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == targetUserId);
+        if (targetUser == null)
+            return NotFound(new { message = "Usuário de destino não encontrado." });
+
+        var award = new PointAward
         {
-            userId = targetUser.Id,
-            username = targetUser.Username,
-            email = targetUser.Email,
-            profileImage = targetUser.ProfileImage,
-            role = targetUser.Role,
-            points = targetUser.Points,
-            level = targetUser.Level,
-            checkInStreak = targetUser.CheckInStreak,
-            lastCheckInAt = targetUser.LastCheckInAt,
-            createdAt = targetUser.CreatedAt
-        }
-    });
-}
+            TargetUserId = targetUser.Id,
+            GivenByUserId = leader.Id,
+            Points = dto.Points,
+            Reason = dto.Reason?.Trim() ?? string.Empty,
+            CreatedAt = DateTime.UtcNow
+        };
 
-    
+        targetUser.Points += dto.Points;
+
+        // opcional: recalcular nível automaticamente
+        targetUser.Level = (targetUser.Points / 100) + 1;
+
+        _context.PointAwards.Add(award);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Pontos atribuídos com sucesso.",
+            pointsAdded = dto.Points,
+            reason = award.Reason,
+            awardedAt = award.CreatedAt,
+            targetUser = new
+            {
+                userId = targetUser.Id,
+                username = targetUser.Username,
+                email = targetUser.Email,
+                profileImage = targetUser.ProfileImage,
+                role = targetUser.Role,
+                points = targetUser.Points,
+                level = targetUser.Level,
+                checkInStreak = targetUser.CheckInStreak,
+                lastCheckInAt = targetUser.LastCheckInAt,
+                createdAt = targetUser.CreatedAt
+            }
+        });
+    }
+
+
 }

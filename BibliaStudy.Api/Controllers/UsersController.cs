@@ -58,6 +58,7 @@ public class UsersController : ControllerBase
     public IActionResult Signup([FromBody] RegisterUserDto dto)
     {
         Console.WriteLine("signup...");
+
         try
         {
             if (dto == null)
@@ -70,7 +71,20 @@ public class UsersController : ControllerBase
                 return BadRequest(new { message = "Email, senha e username são obrigatórios." });
             }
 
-            // verificar se email já existe
+            var timeZone = string.IsNullOrWhiteSpace(dto.TimeZone)
+                ? "UTC"
+                : dto.TimeZone.Trim();
+
+            // opcional: validar se o timezone existe
+            try
+            {
+                TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+            }
+            catch
+            {
+                timeZone = "UTC";
+            }
+
             var emailExists = _context.Users.Any(u => u.Email == dto.Email);
 
             if (emailExists)
@@ -78,7 +92,6 @@ public class UsersController : ControllerBase
                 return Conflict(new { message = "Este email já está registrado." });
             }
 
-            // receber o profileImage e salvar no banco (garantir que tenha no modelo)
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -86,7 +99,8 @@ public class UsersController : ControllerBase
                 Email = dto.Email,
                 ProfileImage = dto.ProfileImage,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                TimeZone = timeZone
             };
 
             _context.Users.Add(user);
@@ -107,9 +121,9 @@ public class UsersController : ControllerBase
                     role = user.Role,
                     points = user.Points,
                     level = user.Level,
-                    checkinStreak = user.CheckInStreak,
-                },
-
+                    checkInStreak = user.CheckInStreak,
+                    timeZone = user.TimeZone
+                }
             });
         }
         catch (DbUpdateException dbEx)
@@ -155,6 +169,25 @@ public class UsersController : ControllerBase
             });
         }
 
+        var timeZone = string.IsNullOrWhiteSpace(dto.TimeZone)
+            ? user.TimeZone ?? "UTC"
+            : dto.TimeZone.Trim();
+
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+        }
+        catch
+        {
+            timeZone = user.TimeZone ?? "UTC";
+        }
+
+        if (user.TimeZone != timeZone)
+        {
+            user.TimeZone = timeZone;
+            await _context.SaveChangesAsync();
+        }
+
         var token = GenerateJwtToken(user);
 
         return Ok(new
@@ -167,12 +200,12 @@ public class UsersController : ControllerBase
                 username = user.Username,
                 email = user.Email,
                 profileImage = user.ProfileImage,
-
                 level = user.Level,
                 points = user.Points,
                 lastCheckInAt = user.LastCheckInAt,
                 checkInStreak = user.CheckInStreak,
-                role = user.Role
+                role = user.Role,
+                timeZone = user.TimeZone
             }
         });
     }

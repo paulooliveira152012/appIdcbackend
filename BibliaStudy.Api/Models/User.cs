@@ -27,4 +27,5 @@ public class User
     public DateTime? LastCheckInAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string TimeZone { get; set; } = "UTC";
 }
