@@ -187,7 +187,8 @@ public class UsersController : ControllerBase
                 profileImage = u.ProfileImage,
                 level = u.Level,
                 points = u.Points,
-                lastCheckInAt = u.LastCheckInAt
+                lastCheckInAt = u.LastCheckInAt,
+                checkInStreak = u.CheckInStreak
             })
             .FirstOrDefaultAsync();
 
