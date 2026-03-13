@@ -12,4 +12,5 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<PointTransaction> PointTransactions { get; set; }
     public DbSet<DailyCheckIn> DailyCheckIns { get; set; }
+    public DbSet<PointAward> PointAwards { get; set; }
 }

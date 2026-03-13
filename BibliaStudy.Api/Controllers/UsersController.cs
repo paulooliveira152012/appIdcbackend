@@ -166,7 +166,13 @@ public class UsersController : ControllerBase
                 userId = user.Id,
                 username = user.Username,
                 email = user.Email,
-                profileImage = user.ProfileImage
+                profileImage = user.ProfileImage,
+
+                level = user.Level,
+                points = user.Points,
+                lastCheckInAt = user.LastCheckInAt,
+                checkInStreak = user.CheckInStreak,
+                role = user.Role
             }
         });
     }
@@ -188,7 +194,8 @@ public class UsersController : ControllerBase
                 level = u.Level,
                 points = u.Points,
                 lastCheckInAt = u.LastCheckInAt,
-                checkInStreak = u.CheckInStreak
+                checkInStreak = u.CheckInStreak,
+                role = u.Role
             })
             .FirstOrDefaultAsync();
 
