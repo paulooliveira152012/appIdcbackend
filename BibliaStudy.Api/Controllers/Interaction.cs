@@ -37,16 +37,28 @@ public class InteractionController : ControllerBase
         var today = now.Date;
         var lastCheckInDate = user.LastCheckInAt?.Date;
 
-        if (lastCheckInDate == today)
+   if (lastCheckInDate == today)
+{
+    return BadRequest(new
+    {
+        message = "Check-in já realizado hoje.",
+        streak = user.CheckInStreak ?? 0,
+        points = user.Points,
+        user = new
         {
-            return BadRequest(new
-            {
-                message = "Check-in já realizado hoje.",
-                streak = user.CheckInStreak ?? 0,
-                points = user.Points,
-                lastCheckInAt = user.LastCheckInAt
-            });
+            userId = user.Id,
+            username = user.Username,
+            email = user.Email,
+            profileImage = user.ProfileImage,
+            role = user.Role,
+            points = user.Points,
+            level = user.Level,
+            checkInStreak = user.CheckInStreak,
+            lastCheckInAt = user.LastCheckInAt,
+            createdAt = user.CreatedAt
         }
+    });
+}
 
         var yesterday = today.AddDays(-1);
 
