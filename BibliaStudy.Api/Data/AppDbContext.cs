@@ -13,4 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<PointTransaction> PointTransactions { get; set; }
     public DbSet<DailyCheckIn> DailyCheckIns { get; set; }
     public DbSet<PointAward> PointAwards { get; set; }
+    public DbSet<Note> Notes { get; set; }
+    public DbSet<NoteComment> NoteComments { get; set; }
+    public DbSet<NoteLike> NoteLikes { get; set; }
 }
