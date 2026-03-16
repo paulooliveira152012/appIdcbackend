@@ -44,7 +44,9 @@ public class NotesController : ControllerBase
                 commentsCount = n.Comments.Count,
                 likes = n.Likes.Select(l => new
                 {
-                    userId = l.UserId
+                    userId = l.UserId,
+                    username = l.User!.Username,
+                    profileImage = l.User.ProfileImage
                 }),
                 comments = n.Comments
                     .OrderByDescending(c => c.CreatedAt)
@@ -178,6 +180,29 @@ public class NotesController : ControllerBase
 
         return Ok(new { message = "Anotação deletada com sucesso." });
     }
+
+    [HttpDelete("comments/{commentId}")]
+public async Task<IActionResult> DeleteComment(string commentId, [FromQuery] string userId)
+{
+    if (!Guid.TryParse(commentId, out var parsedCommentId))
+        return BadRequest(new { message = "CommentId inválido." });
+
+    if (!Guid.TryParse(userId, out var parsedUserId))
+        return BadRequest(new { message = "UserId inválido." });
+
+    var comment = await _context.NoteComments.FirstOrDefaultAsync(c => c.Id == parsedCommentId);
+
+    if (comment == null)
+        return NotFound(new { message = "Comentário não encontrado." });
+
+    if (comment.UserId != parsedUserId)
+        return StatusCode(403, new { message = "Apenas o dono do comentário pode apagá-lo." });
+
+    _context.NoteComments.Remove(comment);
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Comentário apagado com sucesso." });
+}
 
     [HttpPost("{noteId}/comments")]
     public async Task<IActionResult> AddComment(string noteId, [FromBody] CreateCommentDto dto)
