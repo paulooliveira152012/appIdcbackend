@@ -34,6 +34,7 @@ public class NotesController : ControllerBase
                 tag = n.Tag,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt,
+                isHighlighted = n.IsHighlighted,
                 createdBy = new
                 {
                     userId = n.CreatedBy!.Id,
@@ -182,27 +183,27 @@ public class NotesController : ControllerBase
     }
 
     [HttpDelete("comments/{commentId}")]
-public async Task<IActionResult> DeleteComment(string commentId, [FromQuery] string userId)
-{
-    if (!Guid.TryParse(commentId, out var parsedCommentId))
-        return BadRequest(new { message = "CommentId inválido." });
+    public async Task<IActionResult> DeleteComment(string commentId, [FromQuery] string userId)
+    {
+        if (!Guid.TryParse(commentId, out var parsedCommentId))
+            return BadRequest(new { message = "CommentId inválido." });
 
-    if (!Guid.TryParse(userId, out var parsedUserId))
-        return BadRequest(new { message = "UserId inválido." });
+        if (!Guid.TryParse(userId, out var parsedUserId))
+            return BadRequest(new { message = "UserId inválido." });
 
-    var comment = await _context.NoteComments.FirstOrDefaultAsync(c => c.Id == parsedCommentId);
+        var comment = await _context.NoteComments.FirstOrDefaultAsync(c => c.Id == parsedCommentId);
 
-    if (comment == null)
-        return NotFound(new { message = "Comentário não encontrado." });
+        if (comment == null)
+            return NotFound(new { message = "Comentário não encontrado." });
 
-    if (comment.UserId != parsedUserId)
-        return StatusCode(403, new { message = "Apenas o dono do comentário pode apagá-lo." });
+        if (comment.UserId != parsedUserId)
+            return StatusCode(403, new { message = "Apenas o dono do comentário pode apagá-lo." });
 
-    _context.NoteComments.Remove(comment);
-    await _context.SaveChangesAsync();
+        _context.NoteComments.Remove(comment);
+        await _context.SaveChangesAsync();
 
-    return Ok(new { message = "Comentário apagado com sucesso." });
-}
+        return Ok(new { message = "Comentário apagado com sucesso." });
+    }
 
     [HttpPost("{noteId}/comments")]
     public async Task<IActionResult> AddComment(string noteId, [FromBody] CreateCommentDto dto)
@@ -286,5 +287,107 @@ public async Task<IActionResult> DeleteComment(string commentId, [FromQuery] str
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Like adicionado com sucesso.", liked = true });
+    }
+
+
+
+    [HttpPost("highlight")]
+    public async Task<IActionResult> SetHighlightedNote([FromBody] HighlightNoteDto dto)
+    {
+        try
+        {
+            if (dto == null)
+                return BadRequest(new { message = "Dados inválidos." });
+
+            if (string.IsNullOrWhiteSpace(dto.LeaderUserId))
+                return BadRequest(new { message = "LeaderUserId é obrigatório." });
+
+            if (string.IsNullOrWhiteSpace(dto.NoteId))
+                return BadRequest(new { message = "NoteId é obrigatório." });
+
+            if (!Guid.TryParse(dto.LeaderUserId, out var leaderUserId))
+                return BadRequest(new { message = "LeaderUserId inválido." });
+
+            if (!Guid.TryParse(dto.NoteId, out var noteId))
+                return BadRequest(new { message = "NoteId inválido." });
+
+            var leader = await _context.Users.FirstOrDefaultAsync(u => u.Id == leaderUserId);
+            if (leader == null)
+                return NotFound(new { message = "Leader não encontrado." });
+
+            if (string.IsNullOrWhiteSpace(leader.Role) || leader.Role.ToLower() != "leader")
+                return StatusCode(403, new { message = "Apenas leaders podem destacar anotações." });
+
+            var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == noteId);
+            if (note == null)
+                return NotFound(new { message = "Anotação não encontrada." });
+
+            var highlightedNotes = await _context.Notes
+                .Where(n => n.IsHighlighted)
+                .ToListAsync();
+
+            foreach (var item in highlightedNotes)
+            {
+                item.IsHighlighted = false;
+            }
+
+            note.IsHighlighted = true;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Anotação destacada com sucesso.",
+                noteId = note.Id
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Erro interno ao destacar anotação.",
+                error = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("highlighted")]
+    public async Task<IActionResult> GetHighlightedNote()
+    {
+        try
+        {
+            var note = await _context.Notes
+        .Where(n => n.IsHighlighted)
+        .Select(n => new
+        {
+            id = n.Id,
+            title = n.Title,
+            content = n.Content,
+            createdAt = n.CreatedAt,
+            isHighlighted = n.IsHighlighted,
+
+            createdBy = new
+            {
+                userId = n.CreatedBy!.Id,
+                username = n.CreatedBy.Username,
+                profileImage = n.CreatedBy.ProfileImage
+            }
+        })
+        .FirstOrDefaultAsync();
+
+            return Ok(new
+            {
+                message = "Anotação destacada buscada com sucesso.",
+                note
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                message = "Erro interno ao buscar anotação destacada.",
+                error = ex.Message
+            });
+        }
     }
 }
