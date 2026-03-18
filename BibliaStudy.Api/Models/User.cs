@@ -28,4 +28,9 @@ public class User
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string TimeZone { get; set; } = "UTC";
+    
+    public DateTime? LastAttendanceAt { get; set; }
+
+    public string? Attendance {get; set;}
+    public int? AttendanceStreak {get; set;}
 }
