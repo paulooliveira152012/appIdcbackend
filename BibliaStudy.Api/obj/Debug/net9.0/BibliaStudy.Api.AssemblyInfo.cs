@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BibliaStudy.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eff1008b4f3a84ec88595856adb5050f87196808")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+95254947697101021dd8c52186c40f8cfffce75b")]
 [assembly: System.Reflection.AssemblyProductAttribute("BibliaStudy.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BibliaStudy.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

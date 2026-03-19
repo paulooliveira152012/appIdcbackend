@@ -371,7 +371,8 @@ public class NotesController : ControllerBase
             {
                 userId = n.CreatedBy!.Id,
                 username = n.CreatedBy.Username,
-                profileImage = n.CreatedBy.ProfileImage
+                profileImage = n.CreatedBy.ProfileImage,
+                level = n.CreatedBy.Level
             }
         })
         .FirstOrDefaultAsync();
